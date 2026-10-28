@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+bin/proc_ctrl
+bin/dummy_worker
+bin/*.o
+*.o
+
+# Logs and temporary files
+*.log
+.DS_Store
+Thumbs.db

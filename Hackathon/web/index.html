@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linux Signal-Based Process Controller | OSSP Hackathon</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="theme-cyber">
+  <!-- Top Application Banner -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <path d="M7 8l3 3-3 3"></path>
+            <line x1="12" y1="14" x2="16" y2="14"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="title-row">
+            <h1>Linux Signal-Based Process Controller</h1>
+            <span class="badge badge-primary">OSSP HACKATHON</span>
+            <span class="badge badge-outline">POSIX.1-2008</span>
+          </div>
+          <p class="subtitle">Process Lifecycle Management & Kernel Signal Telemetry Engine</p>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div class="status-pill" id="backendStatusPill">
+          <span class="status-dot"></span>
+          <span id="backendStatusText">Detecting Environment...</span>
+        </div>
+        <div class="header-actions">
+          <button id="themeToggleBtn" class="btn btn-ghost btn-icon" title="Toggle Theme (Cyber Dark / Solarized / Minimal)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button id="quickSpawnBtn" class="btn btn-primary btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Spawn Worker
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="app-nav">
+      <div class="nav-container">
+        <button class="nav-tab active" data-tab="dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Live Controller
+        </button>
+        <button class="nav-tab" data-tab="presentation">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 3h20v14H2z"></path>
+            <path d="M8 21h8"></path>
+            <path d="M12 17v4"></path>
+          </svg>
+          Faculty Presentation
+          <span class="tab-highlight">10 Slides</span>
+        </button>
+        <button class="nav-tab" data-tab="lab">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 2v7.31"></path>
+            <path d="M14 9.3V2"></path>
+            <path d="M8.5 2h7"></path>
+            <path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path>
+          </svg>
+          Interactive Signal Lab
+        </button>
+        <button class="nav-tab" data-tab="source">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          C Source Code Explorer
+        </button>
+        <button class="nav-tab" data-tab="report">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          Report & Viva Guide
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="app-main">
+    
+    <!-- ================================================================ -->
+    <!-- TAB 1: LIVE PROCESS CONTROLLER DASHBOARD                          -->
+    <!-- ================================================================ -->
+    <section id="tab-dashboard" class="tab-pane active">
+      <!-- Metrics Bar -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">TOTAL MONITORED</span>
+            <span class="metric-icon">⚙️</span>
+          </div>
+          <div class="metric-value" id="metricTotal">0</div>
+          <div class="metric-caption">Tracked Linux Processes</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">RUNNING (ACTIVE)</span>
+            <span class="metric-icon">🟢</span>
+          </div>
+          <div class="metric-value color-running" id="metricRunning">0</div>
+          <div class="metric-caption">State: TASK_RUNNING / SLEEP</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">STOPPED (PAUSED)</span>
+            <span class="metric-icon">🟡</span>
+          </div>
+          <div class="metric-value color-stopped" id="metricStopped">0</div>
+          <div class="metric-caption">State: TASK_STOPPED (SIGSTOP)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">SIGNALS DISPATCHED</span>
+            <span class="metric-icon">⚡</span>
+          </div>
+          <div class="metric-value color-signal" id="metricSignals">0</div>
+          <div class="metric-caption">Avg Latency: <span id="avgLatency">38.4</span> µs</div>
+        </div>
+      </div>
+
+      <!-- Dashboard Main Layout -->
+      <div class="dashboard-grid">
+        
+        <!-- Left Column: Process Table & Controls -->
+        <div class="panel process-table-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <h2>Active Processes</h2>
+              <span class="panel-subtitle">Select a process to inspect or execute signals</span>
+            </div>
+            <div class="panel-actions">
+              <button class="btn btn-secondary btn-sm" id="btnSpawnModal">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                New Workload
+              </button>
+              <button class="btn btn-outline btn-sm" id="btnSeedDemo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                </svg>
+                Reset Demo
+              </button>
+            </div>
+          </div>
+
+          <!-- Signal Legend Toolbar -->
+          <div class="signal-legend-bar">
+            <span class="legend-label">Supported Signals:</span>
+            <span class="legend-tag sigstop">SIGSTOP (19) Pause</span>
+            <span class="legend-tag sigcont">SIGCONT (18) Resume</span>
+            <span class="legend-tag sighup">SIGHUP (1) Reload</span>
+            <span class="legend-tag sigterm">SIGTERM (15) Terminate</span>
+            <span class="legend-tag sigkill">SIGKILL (9) Force Kill</span>
+          </div>
+
+          <!-- Process List Table Container -->
+          <div class="table-container">
+            <table class="process-table" id="processTable">
+              <thead>
+                <tr>
+                  <th>PID</th>
+                  <th>PPID</th>
+                  <th>PROCESS NAME</th>
+                  <th>STATE</th>
+                  <th>RSS RAM</th>
+                  <th>CPU%</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="processTableBody">
+                <!-- Dynamically Populated by JS -->
+              </tbody>
+            </table>
+            <div id="noProcessesNotice" class="empty-state hidden">
+              <p>No active processes monitored. Click <strong>Spawn Worker</strong> or <strong>Reset Demo</strong> to begin.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: State Machine & Inspector -->
+        <div class="side-column">
+          
+          <!-- Interactive State Machine Card -->
+          <div class="panel state-machine-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <h3>Process State Machine</h3>
+                <span class="panel-subtitle">Linux Kernel Task Transitions</span>
+              </div>
+              <span class="badge badge-info" id="selectedPidBadge">Select Process</span>
+            </div>
+
+            <div class="state-diagram-wrapper">
+              <svg id="stateDiagramSvg" viewBox="0 0 540 220" class="state-diagram">
+                <!-- SVG State Nodes & Transition Beams -->
+                <defs>
+                  <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="currentColor"></path>
+                  </marker>
+                  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+                    <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+                  </filter>
+                </defs>
+
+                <!-- Transition Path: RUNNING <-> STOPPED -->
+                <path id="path-pause" d="M 220 70 C 260 30, 320 30, 360 70" class="transition-path" marker-end="url(#arrow)"></path>
+                <text x="290" y="38" class="path-label">SIGSTOP (19)</text>
+
+                <path id="path-resume" d="M 360 110 C 320 150, 260 150, 220 110" class="transition-path" marker-end="url(#arrow)"></path>
+                <text x="290" y="152" class="path-label">SIGCONT (18)</text>
+
+                <!-- Transition Path: RUNNING -> ZOMBIE / DEAD -->
+                <path id="path-terminate" d="M 170 120 L 170 170" class="transition-path" marker-end="url(#arrow)"></path>
+                <text x="175" y="148" class="path-label">SIGTERM / SIGKILL</text>
+
+                <path id="path-reap" d="M 230 190 L 350 190" class="transition-path" marker-end="url(#arrow)"></path>
+                <text x="290" y="185" class="path-label">waitpid()</text>
+
+                <!-- Node: CREATED / NEW -->
+                <g id="node-new" class="state-node" transform="translate(40, 90)">
+                  <circle r="26" class="node-bg"></circle>
+                  <text dy="-4" class="node-title">NEW</text>
+                  <text dy="12" class="node-sub">fork()</text>
+                </g>
+
+                <path d="M 68 90 L 118 90" class="transition-path" marker-end="url(#arrow)"></path>
+
+                <!-- Node: RUNNING (TASK_RUNNING) -->
+                <g id="node-running" class="state-node" transform="translate(170, 90)">
+                  <circle r="42" class="node-bg active-running"></circle>
+                  <text dy="-6" class="node-title">RUNNING</text>
+                  <text dy="12" class="node-sub">TASK_RUNNING</text>
+                  <text dy="26" class="node-code">[R / S]</text>
+                </g>
+
+                <!-- Node: STOPPED (TASK_STOPPED) -->
+                <g id="node-stopped" class="state-node" transform="translate(410, 90)">
+                  <circle r="42" class="node-bg active-stopped"></circle>
+                  <text dy="-6" class="node-title">STOPPED</text>
+                  <text dy="12" class="node-sub">TASK_STOPPED</text>
+                  <text dy="26" class="node-code">[T]</text>
+                </g>
+
+                <!-- Node: ZOMBIE (EXIT_ZOMBIE) -->
+                <g id="node-zombie" class="state-node" transform="translate(170, 190)">
+                  <rect x="-45" y="-18" width="90" height="36" rx="8" class="node-bg-rect"></rect>
+                  <text dy="4" class="node-title-sm">ZOMBIE [Z]</text>
+                </g>
+
+                <!-- Node: TERMINATED (DEAD) -->
+                <g id="node-dead" class="state-node" transform="translate(410, 190)">
+                  <rect x="-45" y="-18" width="90" height="36" rx="8" class="node-bg-rect"></rect>
+                  <text dy="4" class="node-title-sm">REAPED [X]</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Kernel Syscall Log & /proc Inspector -->
+          <div class="panel telemetry-panel">
+            <div class="telemetry-tabs">
+              <button class="sub-tab active" data-subtab="syscalls">
+                <span class="subtab-dot"></span> Live Syscall Log
+              </button>
+              <button class="sub-tab" data-subtab="procfs">
+                <span class="subtab-dot"></span> /proc/[pid]/status
+              </button>
+            </div>
+
+            <!-- Subtab A: Syscall Stream -->
+            <div id="subtab-syscalls" class="telemetry-body active">
+              <div class="terminal-window" id="syscallTerminal">
+                <div class="terminal-line system-line">[KERNEL INIT] Linux Signal Process Controller v2.4 initialized.</div>
+                <div class="terminal-line system-line">[TELEMETRY] Listening for POSIX signal events via kill(2)...</div>
+              </div>
+            </div>
+
+            <!-- Subtab B: ProcFS Status Dump -->
+            <div id="subtab-procfs" class="telemetry-body">
+              <div class="procfs-viewer" id="procfsViewer">
+                <div class="procfs-placeholder">Click any process above to view its live <code>/proc/[pid]/status</code> and decoded signal bitmasks.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- TAB 2: FACULTY PRESENTATION & VIVA WALKTHROUGH                    -->
+    <!-- ================================================================ -->
+    <section id="tab-presentation" class="tab-pane">
+      <div class="presentation-container">
+        <!-- Presentation Header / Slide Control -->
+        <div class="pres-controls">
+          <div class="pres-meta">
+            <span class="pres-badge">ACADEMIC VIVA SLIDE DECK</span>
+            <span class="pres-counter" id="slideCounter">Slide 1 of 10</span>
+          </div>
+
+          <div class="pres-nav-buttons">
+            <button class="btn btn-secondary btn-sm" id="prevSlideBtn">
+              ◀ Previous
+            </button>
+            <button class="btn btn-secondary btn-sm" id="nextSlideBtn">
+              Next ▶
+            </button>
+            <button class="btn btn-outline btn-sm" id="fullscreenPresBtn" title="Toggle Fullscreen (F)">
+              ⛶ Fullscreen
+            </button>
+            <button class="btn btn-ghost btn-sm" id="toggleNotesBtn">
+              💡 Speaker Notes
+            </button>
+          </div>
+        </div>
+
+        <!-- Slides Viewport -->
+        <div class="slide-deck-viewport" id="slideDeckViewport">
+          
+          <!-- SLIDE 1: Title & Abstract -->
+          <div class="slide active" data-slide="1">
+            <div class="slide-hero">
+              <div class="slide-tag">OSSP HACKATHON PROJECT SHOWCASE</div>
+              <h2 class="slide-headline">Linux Signal-Based Process Controller</h2>
+              <p class="slide-lead">A POSIX-Compliant Systems Utility & Kernel Telemetry Dashboard for Granular Process Lifecycle Management via Asynchronous Signals.</p>
+              
+              <div class="slide-grid-3">
+                <div class="slide-card">
+                  <div class="card-num">01</div>
+                  <h4>Core Objectives</h4>
+                  <p>Implement uncompromised process pause, resume, graceful termination, uncatchable kill, and live reload using standard Linux signals.</p>
+                </div>
+                <div class="slide-card">
+                  <div class="card-num">02</div>
+                  <h4>Systems Level Rigor</h4>
+                  <p>Direct POSIX C syscalls (<code>kill</code>, <code>sigaction</code>, <code>waitpid</code>) integrated with Linux <code>/proc/[pid]</code> kernel introspection.</p>
+                </div>
+                <div class="slide-card">
+                  <div class="card-num">03</div>
+                  <h4>Dual Execution Engine</h4>
+                  <p>Runs natively on Linux/WSL2 with real kernel execution, complemented by a self-contained zero-install interactive faculty simulation.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 2: What are Linux Signals? -->
+          <div class="slide" data-slide="2">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">FUNDAMENTALS OF OPERATING SYSTEMS</span>
+              <h2 class="slide-headline">Linux Signals: Asynchronous Kernel IPC</h2>
+            </div>
+            <div class="slide-grid-2">
+              <div class="slide-content">
+                <h3>What is a Signal?</h3>
+                <p>A <strong>signal</strong> is a standardized software interrupt delivered by the Linux kernel to notify a user-space process that a specific event has occurred.</p>
+                
+                <div class="flow-box">
+                  <div class="flow-step">1. Event Triggered (Timer, User Ctrl+C, Syscall <code>kill(2)</code>)</div>
+                  <div class="flow-arrow">⬇</div>
+                  <div class="flow-step">2. Kernel marks signal bit in Process Task Struct (<code>task_struct->pending</code>)</div>
+                  <div class="flow-arrow">⬇</div>
+                  <div class="flow-step">3. Scheduler switches context: Kernel -> User space transition</div>
+                  <div class="flow-arrow">⬇</div>
+                  <div class="flow-step">4. Process executes default action or custom <code>sigaction()</code> handler</div>
+                </div>
+              </div>
+              <div class="slide-content">
+                <h3>Default Signal Dispositions</h3>
+                <ul class="pres-list">
+                  <li><strong>Term</strong>: Abruptly terminates the process.</li>
+                  <li><strong>Core</strong>: Terminates the process and generates a memory core dump for debugging.</li>
+                  <li><strong>Stop</strong>: Suspends execution; process transitions to <code>TASK_STOPPED</code>.</li>
+                  <li><strong>Cont</strong>: Resumes execution if previously suspended.</li>
+                  <li><strong>Ign</strong>: Completely ignored by the kernel and discarded.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 3: Signal Numbers & Taxonomy -->
+          <div class="slide" data-slide="3">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">POSIX.1-2008 TAXONOMY</span>
+              <h2 class="slide-headline">Core Signals Managed by Our Controller</h2>
+            </div>
+            <table class="pres-table">
+              <thead>
+                <tr>
+                  <th>Signal</th>
+                  <th>Number</th>
+                  <th>Default Action</th>
+                  <th>Catchable?</th>
+                  <th>Blockable?</th>
+                  <th>Controller Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="highlight-row">
+                  <td><code>SIGSTOP</code></td>
+                  <td>19</td>
+                  <td>Stop Process</td>
+                  <td><span class="badge badge-danger">NO</span></td>
+                  <td><span class="badge badge-danger">NO</span></td>
+                  <td><strong>Pause Process Execution</strong></td>
+                </tr>
+                <tr class="highlight-row">
+                  <td><code>SIGCONT</code></td>
+                  <td>18</td>
+                  <td>Continue / Resume</td>
+                  <td><span class="badge badge-success">YES</span></td>
+                  <td><span class="badge badge-success">YES</span></td>
+                  <td><strong>Resume Suspended Process</strong></td>
+                </tr>
+                <tr class="highlight-row">
+                  <td><code>SIGTERM</code></td>
+                  <td>15</td>
+                  <td>Terminate Process</td>
+                  <td><span class="badge badge-success">YES</span></td>
+                  <td><span class="badge badge-success">YES</span></td>
+                  <td><strong>Graceful Shutdown Request</strong></td>
+                </tr>
+                <tr class="highlight-row">
+                  <td><code>SIGKILL</code></td>
+                  <td>9</td>
+                  <td>Terminate Process</td>
+                  <td><span class="badge badge-danger">NO</span></td>
+                  <td><span class="badge badge-danger">NO</span></td>
+                  <td><strong>Immediate Forceful Eviction</strong></td>
+                </tr>
+                <tr>
+                  <td><code>SIGHUP</code></td>
+                  <td>1</td>
+                  <td>Terminate Process</td>
+                  <td><span class="badge badge-success">YES</span></td>
+                  <td><span class="badge badge-success">YES</span></td>
+                  <td><strong>In-Place Configuration Reload</strong></td>
+                </tr>
+                <tr>
+                  <td><code>SIGCHLD</code></td>
+                  <td>17</td>
+                  <td>Ignore</td>
+                  <td><span class="badge badge-success">YES</span></td>
+                  <td><span class="badge badge-success">YES</span></td>
+                  <td><strong>Zombie Process Reaping</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- SLIDE 4: SIGSTOP vs SIGTSTP & SIGTERM vs SIGKILL -->
+          <div class="slide" data-slide="4">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">DEEP DIVE COMPARISONS</span>
+              <h2 class="slide-headline">Critical Kernel Distinctions Faculty Ask About</h2>
+            </div>
+            <div class="slide-grid-2">
+              <div class="slide-card-dark">
+                <h4>1. SIGSTOP vs. SIGTSTP (Pause Mechanisms)</h4>
+                <div class="comparison-row">
+                  <div class="comp-col">
+                    <strong>SIGSTOP (19)</strong>
+                    <p>Sent by our controller. Handled directly by the kernel scheduler. The process <em>never receives</em> the signal in user space. Cannot be intercepted, blocked, or ignored under any condition.</p>
+                  </div>
+                  <div class="comp-col">
+                    <strong>SIGTSTP (20)</strong>
+                    <p>Sent by the terminal driver when user presses <code>Ctrl+Z</code>. Can be intercepted or ignored by user code (e.g. Vim, text editors) to clean up terminal states before stopping.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="slide-card-dark">
+                <h4>2. SIGTERM vs. SIGKILL (Termination Mechanisms)</h4>
+                <div class="comparison-row">
+                  <div class="comp-col">
+                    <strong>SIGTERM (15)</strong>
+                    <p>Cooperative request. The target process intercepts it, executes cleanup handlers (flushes disk buffers, closes sockets, finishes transactions), and exits cleanly.</p>
+                  </div>
+                  <div class="comp-col">
+                    <strong>SIGKILL (9)</strong>
+                    <p>Uncatchable eviction. The kernel immediately removes the process from the runqueue, tears down address space, and reclaims memory. No user cleanup code ever executes.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 5: Kernel State Transitions -->
+          <div class="slide" data-slide="5">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">KERNEL INTERNALS</span>
+              <h2 class="slide-headline">Process States in the Linux Scheduler</h2>
+            </div>
+            <div class="slide-grid-2">
+              <div class="slide-content">
+                <h3>The 5 Canonical Task States:</h3>
+                <ul class="state-list">
+                  <li><span class="state-badge r">R</span> <strong>TASK_RUNNING</strong>: Process is either actively running on CPU or waiting in the scheduler's runqueue.</li>
+                  <li><span class="state-badge s">S</span> <strong>TASK_INTERRUPTIBLE</strong>: Process is sleeping, awaiting an event or I/O. Can be awakened by signals.</li>
+                  <li><span class="state-badge d">D</span> <strong>TASK_UNINTERRUPTIBLE</strong>: Waiting on hardware I/O; ignores signals until I/O finishes.</li>
+                  <li><span class="state-badge t">T</span> <strong>TASK_STOPPED</strong>: Execution suspended by <code>SIGSTOP</code> or <code>SIGTSTP</code>. Only <code>SIGCONT</code> or <code>SIGKILL</code> can alter this state.</li>
+                  <li><span class="state-badge z">Z</span> <strong>EXIT_ZOMBIE</strong>: Process has finished executing, but its parent has not yet read its exit code via <code>waitpid()</code>.</li>
+                </ul>
+              </div>
+              <div class="slide-content">
+                <div class="diagram-card">
+                  <h4>State Transition Flow</h4>
+                  <div class="ascii-diagram">
+     [NEW] ──fork()──> [TASK_RUNNING (R)] 
+                             │    ▲
+                    SIGSTOP  │    │  SIGCONT
+                      (19)   ▼    │   (18)
+                       [TASK_STOPPED (T)]
+                             │
+                      SIGTERM / SIGKILL
+                             ▼
+                     [EXIT_ZOMBIE (Z)]
+                             │  waitpid()
+                             ▼
+                        [DEAD (X)]
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 6: C Implementation Architecture -->
+          <div class="slide" data-slide="6">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">SYSTEMS PROGRAMMING</span>
+              <h2 class="slide-headline">POSIX C System Calls Implemented</h2>
+            </div>
+            <div class="slide-grid-3">
+              <div class="code-card">
+                <h4>1. Dispatching Signals</h4>
+                <pre class="mini-code"><code>// kill(2) POSIX syscall
+int ret = kill(pid, signo);
+if (ret == -1) {
+    perror("kill");
+}</code></pre>
+                <p>Sends targeted signal to PID. Return code 0 indicates kernel accepted delivery.</p>
+              </div>
+
+              <div class="code-card">
+                <h4>2. Trapping Signals</h4>
+                <pre class="mini-code"><code>struct sigaction sa;
+sa.sa_sigaction = handle_sig;
+sa.sa_flags = SA_SIGINFO | SA_RESTART;
+sigfillset(&sa.sa_mask);
+sigaction(SIGTERM, &sa, NULL);</code></pre>
+                <p>Uses modern <code>sigaction()</code> with <code>SA_SIGINFO</code> to retrieve sender PID/UID.</p>
+              </div>
+
+              <div class="code-card">
+                <h4>3. Process Reaping</h4>
+                <pre class="mini-code"><code>// Non-blocking reap
+int status;
+pid_t reaped = waitpid(
+    -1, &status, WNOHANG
+);</code></pre>
+                <p>Installed inside <code>SIGCHLD</code> handler to completely eliminate zombie processes.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 7: /proc Filesystem Introspection -->
+          <div class="slide" data-slide="7">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">KERNEL TELEMETRY</span>
+              <h2 class="slide-headline">ProcFS Introspection & Hex Mask Decoding</h2>
+            </div>
+            <div class="slide-grid-2">
+              <div class="slide-content">
+                <h3>Reading <code>/proc/[pid]/status</code></h3>
+                <p>The Linux kernel exposes process metadata directly through the virtual procfs filesystem. Our utility parses:</p>
+                <ul class="pres-list">
+                  <li><code>State:</code> Extracts character code (<code>R</code>, <code>S</code>, <code>T</code>, <code>Z</code>).</li>
+                  <li><code>VmRSS:</code> Actual physical resident memory in RAM.</li>
+                  <li><code>Threads:</code> Number of kernel schedulable threads.</li>
+                </ul>
+
+                <h3>Hexadecimal Signal Bitmasks</h3>
+                <p>The kernel represents registered signal behaviors as 64-bit hexadecimal masks:</p>
+                <div class="mask-box">
+                  <code>SigCgt: 0000000000004a03</code>
+                </div>
+              </div>
+
+              <div class="slide-content">
+                <h3>Our Decoding Algorithm</h3>
+                <p>To identify which signals are caught, our C code applies a bitwise right-shift for each signal number <code>1 <= signo <= 31</code>:</p>
+                <pre class="mini-code"><code>for (int signo = 1; signo <= 31; signo++) {
+    if ((mask >> (signo - 1)) & 1ULL) {
+        // Signal 'signo' is registered!
+        printf("%s ", get_sig_name(signo));
+    }
+}
+// Outputs: SIGHUP, SIGINT, SIGUSR1, SIGUSR2, SIGTERM</code></pre>
+                <div class="badge-success-box">
+                  ✓ Faculty Highlight: Directly demonstrates deep understanding of Linux kernel data structures!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 8: Zombie Process Prevention -->
+          <div class="slide" data-slide="8">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">OS RESOURCE MANAGEMENT</span>
+              <h2 class="slide-headline">Zombie Processes: Root Cause & Prevention</h2>
+            </div>
+            <div class="slide-grid-2">
+              <div class="slide-card-dark">
+                <h4>What causes a Zombie Process (State: Z)?</h4>
+                <p>When a child process terminates, its memory space and file descriptors are freed, but its entry in the Kernel Process Table (PID, exit code, CPU stats) remains until the parent calls <code>wait()</code> or <code>waitpid()</code>.</p>
+                <p class="warning-text">⚠️ <strong>The Danger:</strong> If a parent spawns many children without reaping them, the system runs out of PIDs (kernel PID exhaustion), preventing new processes from starting!</p>
+              </div>
+
+              <div class="slide-card-dark">
+                <h4>Our Dual Solution Architecture</h4>
+                <ol class="pres-numbered-list">
+                  <li><strong>Asynchronous SIGCHLD Handler:</strong> The controller installs a signal handler for <code>SIGCHLD</code> that reaps children with <code>waitpid(-1, &status, WNOHANG)</code> without blocking the parent!</li>
+                  <li><strong>Orphan Reparenting to Init (PID 1):</strong> If a parent crashes, the Linux kernel automatically reparents orphan processes to <code>systemd</code>/<code>init</code>, which routinely reaps zombies.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 9: Real-World Industrial Impact -->
+          <div class="slide" data-slide="9">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">INDUSTRY APPLICATIONS</span>
+              <h2 class="slide-headline">How Production Systems Rely on Signals</h2>
+            </div>
+            <div class="slide-grid-3">
+              <div class="industry-card">
+                <div class="industry-icon">⚙️</div>
+                <h4>systemd & Init</h4>
+                <p><code>systemctl reload</code> sends <strong>SIGHUP</strong> to daemons (Nginx, Apache) to reload configuration without dropping active network connections.</p>
+              </div>
+              <div class="industry-card">
+                <div class="industry-icon">🐳</div>
+                <h4>Docker Containers</h4>
+                <p><code>docker stop</code> sends <strong>SIGTERM</strong>, waits for a grace period (default 10s), then sends <strong>SIGKILL</strong> if the container fails to terminate.</p>
+              </div>
+              <div class="industry-card">
+                <div class="industry-icon">☸️</div>
+                <h4>Kubernetes Pods</h4>
+                <p>Executes <code>preStop</code> hooks, sends <strong>SIGTERM</strong> to allow microservices to drain queues, then enforces <code>terminationGracePeriodSeconds</code> before <strong>SIGKILL</strong>.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 10: Faculty Viva Q&A Cheatsheet -->
+          <div class="slide" data-slide="10">
+            <div class="slide-header">
+              <span class="slide-breadcrumb">VIVA VOCE PREPARATION</span>
+              <h2 class="slide-headline">Top 5 Tough Questions Faculty Ask & Answers</h2>
+            </div>
+            <div class="viva-accordion">
+              <div class="viva-item">
+                <div class="viva-q">Q1: Can a process intercept or block SIGKILL or SIGSTOP? Why or why not?</div>
+                <div class="viva-a"><strong>Answer:</strong> Absolutely not. In the Linux kernel, <code>SIGKILL</code> and <code>SIGSTOP</code> bypass user-space signal tables and are handled directly in the kernel scheduler. This ensures the system administrator / root can always terminate runaway or malicious processes. Attempting <code>sigaction(SIGKILL, ...)</code> returns <code>-1</code> with errno <code>EINVAL</code>.</div>
+              </div>
+
+              <div class="viva-item">
+                <div class="viva-q">Q2: What is the difference between SIGHUP reload and process restart?</div>
+                <div class="viva-a"><strong>Answer:</strong> SIGHUP allows in-place reload: the process keeps its original PID, open file descriptors, and socket bindings while re-reading configuration files. A respawn restart completely kills the existing process and forks a new one, changing the PID and re-initializing from scratch.</div>
+              </div>
+
+              <div class="viva-item">
+                <div class="viva-q">Q3: What happens to child processes when a parent process receives SIGKILL?</div>
+                <div class="viva-a"><strong>Answer:</strong> Child processes become <em>orphans</em>. The Linux kernel reparents them to PID 1 (<code>systemd</code> or <code>init</code>), which adopts them and periodically calls <code>wait()</code> to reap them when they finish.</div>
+              </div>
+
+              <div class="viva-item">
+                <div class="viva-q">Q4: Why use waitpid with WNOHANG in SIGCHLD rather than blocking wait?</div>
+                <div class="viva-a"><strong>Answer:</strong> If multiple child processes terminate simultaneously, standard signals are not queued—they are merged into a single pending bit. A non-blocking <code>while(waitpid(-1, &status, WNOHANG) > 0)</code> loop reaps all finished children without freezing the parent process.</div>
+              </div>
+
+              <div class="viva-item">
+                <div class="viva-q">Q5: How does the kernel know which signals a process has caught?</div>
+                <div class="viva-a"><strong>Answer:</strong> Inside <code>task_struct</code>, the kernel maintains signal structure pointers with bitmasks for <code>sig_catch</code>, <code>sig_ignore</code>, and <code>blocked</code>. These are exported to user space via <code>/proc/[pid]/status</code> as <code>SigCgt</code>, <code>SigIgn</code>, and <code>SigBlk</code> in 64-bit hexadecimal.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Speaker Notes Drawer (Toggled by user) -->
+        <div class="speaker-notes-drawer hidden" id="speakerNotesDrawer">
+          <div class="notes-header">
+            <h4>💡 Speaker Notes for Faculty Presentation</h4>
+            <button class="btn btn-ghost btn-xs" id="closeNotesBtn">✕</button>
+          </div>
+          <div class="notes-body" id="speakerNotesContent">
+            <!-- Dynamic notes loaded per slide -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- TAB 3: INTERACTIVE SIGNAL LAB & CHAOS WORKBENCH                  -->
+    <!-- ================================================================ -->
+    <section id="tab-lab" class="tab-pane">
+      <div class="lab-container">
+        <div class="lab-header">
+          <h2>Interactive OS Experiments & Chaos Lab</h2>
+          <p>Execute live verification experiments proving fundamental Linux signal laws and scheduler behaviors.</p>
+        </div>
+
+        <div class="lab-grid">
+          
+          <!-- Experiment 1: The Uncatchable Signal -->
+          <div class="lab-card">
+            <div class="lab-card-header">
+              <span class="lab-badge exp-1">EXPERIMENT 1</span>
+              <h3>The "Uncatchable Signal" Proof</h3>
+            </div>
+            <p class="lab-desc">Attempts to attach a user-space <code>sigaction()</code> handler to <strong>SIGKILL (9)</strong> and <strong>SIGSTOP (19)</strong> to demonstrate the kernel POSIX safety guarantee.</p>
+            <div class="lab-action-row">
+              <button class="btn btn-primary btn-sm" id="btnRunExp1">Execute Proof</button>
+              <span class="lab-status" id="statusExp1">Ready</span>
+            </div>
+            <div class="lab-console" id="consoleExp1">
+              <code>Click "Execute Proof" to run verification...</code>
+            </div>
+          </div>
+
+          <!-- Experiment 2: Zombie Apocalypse & Reaping -->
+          <div class="lab-card">
+            <div class="lab-card-header">
+              <span class="lab-badge exp-2">EXPERIMENT 2</span>
+              <h3>Zombie Generation & Reaping</h3>
+            </div>
+            <p class="lab-desc">Spawns a child process that exits while the parent deliberately does <em>not</em> call <code>wait()</code>. Observe state <code>Z (Zombie)</code> in <code>/proc</code>, then reap it on demand.</p>
+            <div class="lab-action-row">
+              <button class="btn btn-warning btn-sm" id="btnSpawnZombie">1. Spawn Zombie</button>
+              <button class="btn btn-success btn-sm" id="btnReapZombie" disabled>2. Reap with waitpid()</button>
+            </div>
+            <div class="lab-console" id="consoleExp2">
+              <code>Click "Spawn Zombie" to create an unreaped child...</code>
+            </div>
+          </div>
+
+          <!-- Experiment 3: Rapid Pause / Resume Thrashing -->
+          <div class="lab-card">
+            <div class="lab-card-header">
+              <span class="lab-badge exp-3">EXPERIMENT 3</span>
+              <h3>Rapid Pause / Resume Stress Test</h3>
+            </div>
+            <p class="lab-desc">Floods a target process with alternating <code>SIGSTOP</code> and <code>SIGCONT</code> signals at 50ms intervals to verify scheduler state integrity under load.</p>
+            <div class="lab-action-row">
+              <button class="btn btn-primary btn-sm" id="btnRunExp3">Run 10x Thrash Cycle</button>
+              <span class="lab-status" id="statusExp3">Ready</span>
+            </div>
+            <div class="lab-console" id="consoleExp3">
+              <code>Click "Run 10x Thrash Cycle" to begin stress test...</code>
+            </div>
+          </div>
+
+          <!-- Experiment 4: SIGHUP Dynamic Config Reload -->
+          <div class="lab-card">
+            <div class="lab-card-header">
+              <span class="lab-badge exp-4">EXPERIMENT 4</span>
+              <h3>SIGHUP In-Place Hot Reload</h3>
+            </div>
+            <p class="lab-desc">Simulates a production daemon config reload. Dispatches <code>SIGHUP (1)</code>, verifies the process updates its workload and interval without PID change.</p>
+            <div class="lab-action-row">
+              <button class="btn btn-secondary btn-sm" id="btnRunExp4">Dispatch SIGHUP</button>
+              <span class="lab-status" id="statusExp4">Ready</span>
+            </div>
+            <div class="lab-console" id="consoleExp4">
+              <code>Click "Dispatch SIGHUP" to hot reload worker...</code>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- TAB 4: C SOURCE CODE EXPLORER                                    -->
+    <!-- ================================================================ -->
+    <section id="tab-source" class="tab-pane">
+      <div class="source-container">
+        <div class="source-header">
+          <div class="source-selector">
+            <button class="source-tab active" data-file="proc_controller.c">src/proc_controller.c</button>
+            <button class="source-tab" data-file="dummy_worker.c">src/dummy_worker.c</button>
+            <button class="source-tab" data-file="Makefile">src/Makefile</button>
+            <button class="source-tab" data-file="test_signals.sh">src/test_signals.sh</button>
+          </div>
+          <div class="source-actions">
+            <button class="btn btn-secondary btn-sm" id="copyCodeBtn">📋 Copy Code</button>
+            <button class="btn btn-outline btn-sm" id="downloadFileBtn">💾 Download File</button>
+          </div>
+        </div>
+
+        <div class="code-viewer-grid">
+          <div class="code-display-panel">
+            <pre><code id="codeContentDisplay" class="language-c">// Loading C Source Code...</code></pre>
+          </div>
+          <div class="code-annotations-panel">
+            <h3>Key System Calls & Mechanics</h3>
+            <div class="annotation-card">
+              <h4><code>kill(pid_t pid, int sig)</code></h4>
+              <p>Dispatches the signal to the target process. When <code>sig = 0</code>, checks process existence and user permissions without sending a signal.</p>
+            </div>
+            <div class="annotation-card">
+              <h4><code>sigaction()</code></h4>
+              <p>Reliable POSIX signal handler installation. Replaces obsolete <code>signal()</code> to avoid race conditions and automatic handler resets.</p>
+            </div>
+            <div class="annotation-card">
+              <h4><code>/proc/[pid]/status</code></h4>
+              <p>Virtual procfs parser that extracts live runtime state (<code>R</code>, <code>S</code>, <code>T</code>, <code>Z</code>), RAM RSS, and decoded hexadecimal signal masks.</p>
+            </div>
+            <div class="annotation-card">
+              <h4><code>waitpid(-1, &status, WNOHANG)</code></h4>
+              <p>Non-blocking child process exit harvester. Ensures zombie processes are cleaned up immediately when child terminates.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- TAB 5: TECHNICAL REPORT & VIVA GUIDE                             -->
+    <!-- ================================================================ -->
+    <section id="tab-report" class="tab-pane">
+      <div class="report-container">
+        <div class="report-header">
+          <div class="report-title-block">
+            <h2>Academic Project Documentation & Evaluation Dossier</h2>
+            <p>Comprehensive technical dossier prepared for faculty review, lab external examiners, and hackathon presentation.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" id="printReportBtn">🖨️ Print / Save as PDF</button>
+        </div>
+
+        <div class="report-document">
+          <section class="report-section">
+            <h3>1. Abstract</h3>
+            <p>Process management and asynchronous event handling represent fundamental pillars of POSIX-compliant operating systems. This project presents a high-performance Linux Signal-Based Process Controller designed in standard C (C11) with a dual-engine architecture: a CLI systems utility for native Linux environments and a high-fidelity interactive web dashboard. The controller allows administrators to pause (<code>SIGSTOP</code>), resume (<code>SIGCONT</code>), gracefully terminate (<code>SIGTERM</code>), forcefully evict (<code>SIGKILL</code>), and live-reload (<code>SIGHUP</code>) processes while parsing kernel procfs telemetry to monitor state transitions and decode signal bitmasks in microsecond intervals.</p>
+          </section>
+
+          <section class="report-section">
+            <h3>2. Problem Statement & Motivation</h3>
+            <p>In modern server infrastructure, microservices, and containerized deployments (Docker, Kubernetes), processes frequently encounter resource locks, memory leaks, or require non-disruptive configuration reloads. A naive restart drops active client connections and tears down process state. Utilizing signals allows operating systems to achieve fine-grained control without process destruction. Our utility implements and visualizes these transitions with complete telemetry.</p>
+          </section>
+
+          <section class="report-section">
+            <h3>3. Architecture & Data Flow</h3>
+            <div class="report-flowchart">
+              <code>[Web Dashboard / User CLI] ──> [proc_controller] ──> kill(pid, sig) ──> [Linux Kernel]
+                                        │                                          │
+                                        └───<─── reads /proc/[pid]/status ──<──────┘</code>
+            </div>
+          </section>
+
+          <section class="report-section">
+            <h3>4. Comprehensive Viva Voce Questions & Answers</h3>
+            <div class="viva-dossier">
+              <div class="viva-entry">
+                <strong>Question 1: Explain the difference between synchronous exceptions and asynchronous signals.</strong>
+                <p>Synchronous exceptions (e.g., <code>SIGSEGV</code> on invalid memory access, <code>SIGFPE</code> on divide by zero) are triggered directly by the executing instruction stream and delivered immediately. Asynchronous signals (e.g., <code>SIGSTOP</code>, <code>SIGTERM</code>, <code>SIGKILL</code>) are generated by external entities (another process or hardware clock) and delivered when the target process is scheduled.</p>
+              </div>
+              <div class="viva-entry">
+                <strong>Question 2: Why are global variables inside signal handlers marked <code>volatile sig_atomic_t</code>?</strong>
+                <p>The <code>volatile</code> keyword prevents the compiler from optimizing variable reads into CPU registers, ensuring memory is read fresh on every access. The type <code>sig_atomic_t</code> guarantees that read and write operations are atomic and cannot be interrupted midway by another signal handler.</p>
+              </div>
+              <div class="viva-entry">
+                <strong>Question 3: How does the kernel deliver signals to a process that is currently in <code>TASK_STOPPED</code>?</strong>
+                <p>When stopped by <code>SIGSTOP</code>, all pending signals except <code>SIGKILL</code> and <code>SIGCONT</code> remain in the pending queue and are not delivered until the process transitions back to <code>TASK_RUNNING</code> via <code>SIGCONT</code>. <code>SIGKILL</code> acts immediately regardless of stopped state.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================================================================ -->
+  <!-- MODAL: SPAWN NEW PROCESS WORKLOAD                                -->
+  <!-- ================================================================ -->
+  <dialog id="spawnModal" class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Spawn Tracked Linux Workload</h3>
+        <button class="btn btn-ghost btn-xs close-modal" id="closeSpawnModalBtn">✕</button>
+      </div>
+      <form id="spawnForm" class="modal-form">
+        <div class="form-group">
+          <label for="workloadType">Workload Architecture:</label>
+          <select id="workloadType" class="form-select">
+            <option value="compute">Math / Prime Number Compute (CPU Intensive)</option>
+            <option value="network">Mock Web Daemon (TCP Heartbeat Listener)</option>
+            <option value="logger">File I/O Logger (Continuous Disk Flush)</option>
+            <option value="memory">Memory Buffer Allocator (RSS Growth)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="workloadName">Process Name Identifier:</label>
+          <input type="text" id="workloadName" class="form-input" value="worker_service" required>
+        </div>
+        <div class="form-group">
+          <label for="heartbeatInterval">Heartbeat Interval (ms):</label>
+          <input type="number" id="heartbeatInterval" class="form-input" value="1000" min="200" max="10000">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline close-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Spawn Process (fork & exec)</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ================================================================ -->
+  <!-- MODAL: CUSTOM SIGNAL DISPATCHER                                  -->
+  <!-- ================================================================ -->
+  <dialog id="signalModal" class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Dispatch Custom POSIX Signal</h3>
+        <button class="btn btn-ghost btn-xs close-modal" id="closeSignalModalBtn">✕</button>
+      </div>
+      <form id="customSignalForm" class="modal-form">
+        <input type="hidden" id="customSignalPid">
+        <div class="form-info-box">
+          Target Process: <strong id="customSignalTargetName">Loading...</strong> (PID: <span id="customSignalTargetPid">0</span>)
+        </div>
+        <div class="form-group">
+          <label for="selectedSignal">Select POSIX Signal:</label>
+          <select id="selectedSignal" class="form-select">
+            <option value="SIGSTOP">SIGSTOP (19) - Pause Execution [Uncatchable]</option>
+            <option value="SIGCONT">SIGCONT (18) - Resume Execution</option>
+            <option value="SIGHUP">SIGHUP (1) - Reload Configuration</option>
+            <option value="SIGTERM">SIGTERM (15) - Graceful Termination</option>
+            <option value="SIGKILL">SIGKILL (9) - Force Kill [Uncatchable]</option>
+            <option value="SIGINT">SIGINT (2) - Interrupt (Ctrl+C)</option>
+            <option value="SIGQUIT">SIGQUIT (3) - Quit with Core Dump</option>
+            <option value="SIGUSR1">SIGUSR1 (10) - User Telemetry / Diagnostics</option>
+            <option value="SIGUSR2">SIGUSR2 (12) - Reset Iteration Counters</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline close-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Send Signal (kill)</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/presentation.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

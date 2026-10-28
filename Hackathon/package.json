@@ -1,0 +1,30 @@
+{
+  "name": "linux-signal-process-controller",
+  "version": "2.4.0",
+  "description": "Linux Signal-Based Process Controller - Academic OSSP Hackathon Project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build:c": "wsl make -C src clean && wsl make -C src",
+    "test:c": "wsl bash -c \"cd src && chmod +x test_signals.sh && ./test_signals.sh\""
+  },
+  "keywords": [
+    "linux",
+    "signals",
+    "process-controller",
+    "posix",
+    "sigstop",
+    "sigcont",
+    "sigterm",
+    "sigkill",
+    "ossp",
+    "hackathon"
+  ],
+  "author": "OSSP Hackathon Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}
